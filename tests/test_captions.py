@@ -68,3 +68,8 @@ def test_render_without_chapters():
 
 def test_estimate_tokens():
     assert captions.estimate_tokens("x" * 400) == 100
+
+
+def test_paragraph_breaks_at_chapter_start():
+    frags = [(0, "a"), (5, "b"), (10, "c")]
+    assert captions.paragraphs(frags, breaks=[6]) == [(0, "a b"), (10, "c")]

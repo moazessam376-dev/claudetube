@@ -24,11 +24,14 @@ def parse_json3(data: dict) -> "list[tuple[float, str]]":
     return frags
 
 
-def paragraphs(frags, min_len: float = 20.0, max_len: float = 35.0) -> "list[tuple[float, str]]":
-    """Merge fragments into paragraphs that end on a sentence after min_len, or at max_len."""
+def paragraphs(frags, min_len: float = 20.0, max_len: float = 35.0, breaks=()) -> "list[tuple[float, str]]":
+    """Merge fragments into paragraphs that end on a sentence after min_len, or at max_len.
+
+    A paragraph never spans a time in `breaks` (chapter starts).
+    """
     paras, cur, cur_start = [], [], None
     for t, text in frags:
-        if cur and t - cur_start >= max_len:
+        if cur and (t - cur_start >= max_len or any(cur_start < b <= t for b in breaks)):
             paras.append((cur_start, " ".join(cur)))
             cur = []
         if not cur:
