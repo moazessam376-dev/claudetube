@@ -1,0 +1,1 @@
+{"wireMagic": "pb3", "events": [{"tStartMs": 0, "dDurationMs": 2000, "segs": [{"utf8": "Welcome back.\nToday we"}]}, {"tStartMs": 2000, "dDurationMs": 2000, "segs": [{"utf8": "build a donut."}]}, {"tStartMs": 4000, "dDurationMs": 100, "segs": [{"utf8": "\n"}]}, {"tStartMs": 30000, "dDurationMs": 2000, "segs": [{"utf8": "Press  Tab to\nenter edit mode."}]}]}
