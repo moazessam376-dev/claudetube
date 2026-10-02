@@ -126,9 +126,11 @@ Selection (exactly one):
 Frames are pulled by parallel (8 workers) `ffmpeg -ss T -i <stream-url> -frames:v 1` at
 `--height` (default 720; picks the best avc1 ≤ H, falling back to any codec ≤ H).
 
-Output: contact sheets, default `--grid 3x3`, each tile 640 px wide, timestamp burned into
-the tile's corner with `drawtext` (if ffmpeg lacks drawtext, no burn-in; the legend below still
-gives the mapping). Sheets are written in time order as `sheet_<start>_<end>.jpg`.
+Output: contact sheets, default `--grid 3x3`, each tile 640 px wide, separated by a thin
+padding line. The timestamp is burned into the tile's corner with `drawtext` only when ffmpeg
+supports it — the default Homebrew ffmpeg does **not** (checked 2026-10-03), so the stdout
+legend is the primary tile→timestamp mapping and burn-in is a bonus. Sheets are written in
+time order as `sheet_<start>_<end>.jpg`.
 `--single` writes individual frames instead of sheets.
 
 Stdout: one line per sheet: path + the timestamps of its tiles in reading order. Claude then
