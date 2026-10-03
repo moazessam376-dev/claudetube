@@ -86,10 +86,12 @@ about 1.8k image tokens, so ~200 tokens per frame.
 ## Chrome fallback
 
 If YouTube still blocks yt-dlp, the skill uses your real Chrome through the
-[Claude in Chrome](https://claude.ai/chrome) extension. `scripts/transcript.js` pulls the
-transcript from the caption track or the page's Transcript panel in one call, and frames come
-from seeking the `<video>` and taking screenshots. *Status: written but not yet verified live
-against the current YouTube UI.*
+[Claude in Chrome](https://claude.ai/chrome) extension. `scripts/transcript.js` reads the title,
+chapters and full transcript from the page's Transcript panel in one call (~6 s for a 4-hour
+video). `scripts/frames.js` gets frames: Chrome does not load video in a background tab, so it
+plays the video in a small popup window and draws frames from it into a 3x3 contact sheet over
+the agent's tab, so one screenshot holds 9 frames from the 1080p stream (~6 s per sheet), or one
+full-size frame for reading exact values. *Status: verified live on 2026-10-03 (Windows, Chrome).*
 
 ## Develop
 

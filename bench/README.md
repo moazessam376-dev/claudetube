@@ -12,17 +12,19 @@ Reference: Claude following the Blender Guru donut tutorial took **35 minutes**
 
 ## Prompt (use verbatim)
 
-> Watch https://www.youtube.com/watch?v=z-Xl9tGqH14 and follow Part 1 and Part 2 of the tutorial
-> in Blender until you have the same donut as the video at the end of Part 2. Use the
-> watch-youtube skill.
+> Watch https://www.youtube.com/watch?v=z-Xl9tGqH14 and follow all 8 parts of the tutorial in
+> Blender: model the donut, icing, mug and plate, unwrap and texture everything, scatter the
+> sprinkles, light the scene, and finish with a rendered image like the one at the end of the
+> video. Use the watch-youtube skill.
 
-Change the parts to match whatever the reference run covered, and record which parts you used.
+This matches the reference run: Opus 5.5 working through all 8 parts of the 2026 single-video
+version (4h19m) and ending with a rendered donut.
 
 ## Record
 
 | Run | Model / effort | Parts | Watch time (until step list written) | Total time | Frames viewed | Tokens | Result screenshot |
 |---|---|---|---|---|---|---|---|
-| reference | ? | ? | — | 35 min | — | — | — |
+| reference | Opus 5.5 / ? | 1–8 | — | ~35 min | — | — | (in the post) |
 | 1 | Opus 5.5 / medium | | | | | | |
 | 2 | Opus 5.5 / high | | | | | | |
 
