@@ -72,7 +72,7 @@ def limit(events, max_n: int, start=None, end=None) -> "list[Event]":
     if max_n <= 0:
         return []
     lo = events[0].t if start is None else start
-    hi = events[-1].t + 1 if end is None else end
+    hi = end if end is not None and end > lo else events[-1].t + 1  # no usable end: event span
     width = max(hi - lo, 1e-9) / max_n
     best = {}
     for e in events:

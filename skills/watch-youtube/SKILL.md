@@ -54,6 +54,8 @@ CT frame URL 33:00                        # one 1080p frame
 CT frames URL 33:00 33:05 --grid 2x2      # 2x2 sheet from the HD stream
 ```
 
+(Put `--` before a term that starts with a dash: `CT find URL -- -0.5`.)
+
 Use this wherever an exact number, setting, shortcut or line of code must be copied. Search the
 transcript first to find where it is mentioned, then grab HD frames at those timestamps if the
 transcript does not say the value. Done when every value you will act on came from the transcript

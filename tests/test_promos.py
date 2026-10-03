@@ -36,6 +36,19 @@ def test_lesson_mentions_are_not_promos():
     assert promos.find(paras, 50) == []
 
 
+def test_code_lessons_are_not_promos():
+    paras = [(0, "Now we use the code from the last lesson and paste it here."),
+             (10, "Then use the code again, of course, in the second function."),
+             (20, "Check the course of the loop, the link below the function too.")]
+    assert promos.find(paras, 30) == []
+
+
+def test_discount_sponsor_read():
+    paras = [(0, LESSON), (10, "Thanks to Squarespace for supporting this video. Get 10% off with the link below."),
+             (20, LESSON)]
+    assert promos.find(paras, 30) == [(10.0, 20.0)]
+
+
 def test_sponsor_read():
     paras = [(0, "This video is sponsored by Acme. Use code TUBE for 10% off, link in the description."),
              (20, LESSON)]

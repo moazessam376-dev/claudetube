@@ -73,5 +73,10 @@ def test_limit_fills_empty_slices_with_strongest():
     assert [e.t for e in limit(ev, 3, 0, 100)] == [97, 98, 99]
 
 
+def test_limit_without_usable_end_uses_event_span():
+    ev = [Event(5, 0.1)] + [Event(90 + i, 5.0 + i) for i in range(10)]
+    assert Event(5, 0.1) in limit(ev, 4, 0.0, 0.0)  # duration unknown -> end 0
+
+
 def test_limit_zero():
     assert limit([Event(1, 1.0), Event(2, 2.0)], 0) == []
