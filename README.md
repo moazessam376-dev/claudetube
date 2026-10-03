@@ -27,6 +27,13 @@ winget install yt-dlp.yt-dlp Gyan.FFmpeg          # Windows
 Then just ask: *"watch https://youtu.be/… and follow the tutorial in Blender"*. The
 `watch-youtube` skill takes it from there.
 
+## What runs on your machine
+
+The skill has Claude run local commands: `python …/claudetube.py`, which calls `yt-dlp` and
+`ffmpeg`. It starts a background download of a low-res copy of the video when scanning, and writes
+only to its cache folder (`~/.cache/claudetube/`, deleted after 24 h). It makes no network requests
+except to YouTube, and collects nothing. See [PRIVACY.md](PRIVACY.md).
+
 ## What it does
 
 | Command | What you get |

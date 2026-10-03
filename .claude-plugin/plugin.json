@@ -1,6 +1,6 @@
 {
   "name": "claudetubeskim",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Watch YouTube fast: transcript and chapters first, then exactly the frames a video needs, packed into contact sheets.",
   "author": {
     "name": "moazessam376-dev",
@@ -16,5 +16,8 @@
     "frames",
     "tutorial"
   ],
-  "displayName": "ClaudeTube Skim"
+  "displayName": "ClaudeTube Skim",
+  "documentationUrl": "https://github.com/moazessam376-dev/claudetube#readme",
+  "supportUrl": "https://github.com/moazessam376-dev/claudetube/issues",
+  "privacyPolicyUrl": "https://github.com/moazessam376-dev/claudetube/blob/main/PRIVACY.md"
 }
