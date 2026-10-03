@@ -42,12 +42,23 @@ def _cp(rc, err=""):
     return subprocess.CompletedProcess([], rc, stdout="{}", stderr=err)
 
 
-def test_ytdlp_retries_with_cookies(monkeypatch):
+def test_ytdlp_retries_with_cookies_when_opted_in(monkeypatch):
+    monkeypatch.setenv("CLAUDETUBE_BROWSER", "chrome")
     calls = []
     results = iter([_cp(1, "Sign in to confirm you're not a bot"), _cp(0)])
     monkeypatch.setattr(youtube.proc, "run", lambda a, **k: calls.append(a) or next(results))
     youtube.ytdlp(["-J"], "u")
     assert "--cookies-from-browser" in calls[1] and "--cookies-from-browser" not in calls[0]
+
+
+def test_ytdlp_never_reads_cookies_by_default(monkeypatch):
+    monkeypatch.delenv("CLAUDETUBE_BROWSER", raising=False)
+    calls = []
+    monkeypatch.setattr(youtube.proc, "run",
+                        lambda a, **k: calls.append(a) or _cp(1, "Sign in to confirm you're not a bot"))
+    with pytest.raises(youtube.Blocked):
+        youtube.ytdlp(["-J"], "u")
+    assert len(calls) == 1 and "--cookies-from-browser" not in calls[0]
 
 
 def test_ytdlp_raises_blocked(monkeypatch):

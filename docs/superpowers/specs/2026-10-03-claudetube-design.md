@@ -1,4 +1,4 @@
-# ClaudeTube — Design Spec
+# ClaudeTube design spec
 
 **Date:** 2026-10-03
 **Repo:** `moazessam376-dev/claudetube` (public, MIT)
@@ -41,17 +41,17 @@ Test video: *Beginner Blender Tutorial (2026)*, `z-Xl9tGqH14`, 4h19m, 8 chapters
 | 12 HD frames via parallel `ffmpeg -ss T -i <stream-url>` seeks | 5.9 s, ~1 MB total |
 | 1 HD seek / 48 HD seeks at 24 parallel | 3.3 s / 21.5 s |
 | Tile 12 frames into one sheet | 0.06 s |
-| Scene scan by streaming through ffmpeg (single connection) | 4m41s per **10 min** — throttled, rejected |
+| Scene scan by streaming through ffmpeg (single connection) | 4m41s per **10 min**: throttled, rejected |
 | `yt-dlp -f 134 -N 8 --http-chunk-size 10M` (360p, full video) | 2m42s, 364 MB |
 | Local scene detect on that file (`fps=1,scale=160,select=scene`) | 37 s |
 
 Conclusions: random-access seeks on the stream work but cost ~0.45 s/frame even in parallel;
 continuous decoding through the stream is throttled. A 3×3 sheet is shown to Claude at ~1568 px
-wide, so each tile is ~520 px — a 360p source (640 px) loses almost nothing there. Therefore:
+wide, so each tile is ~520 px, so a 360p source (640 px) loses almost nothing there. Therefore:
 sheets come from a temporary local 360p "scan copy" (instant extraction); HD streamed seeks are
 reserved for frames where small text/values must be read.
 
-Naive `select='gt(scene,0.02)'` found 4354 "changes" in 4h — the presenter's webcam overlay and
+Naive `select='gt(scene,0.02)'` found 4354 "changes" in 4h: the presenter's webcam overlay and
 cursor keep the scene score high. Scene detection needs masking of constantly-changing regions
 (§4.3).
 
@@ -136,22 +136,22 @@ reading the transcript.
 
 Selection (exactly one):
 
-- `T1 T2 T3 …` — explicit timestamps.
-- `--range A-B --every S` — uniform sampling in a range (range defaults to whole video).
-- `--scenes [--range A-B] [--threshold X] [--max N]` — scene-change mode (§4.3).
+- `T1 T2 T3 …`: explicit timestamps.
+- `--range A-B --every S`: uniform sampling in a range (range defaults to whole video).
+- `--scenes [--range A-B] [--threshold X] [--max N]`: scene-change mode (§4.3).
 
 Frame source:
 
-- **Local (default when the scan copy exists or is being prefetched)** — wait for the prefetch
+- **Local (default when the scan copy exists or is being prefetched)**: wait for the prefetch
   to finish if needed, then extract from `scan.mp4` locally (milliseconds per frame).
-- **HD (`--hd`, or no scan copy and ≤ 24 frames requested)** — parallel (16 workers)
+- **HD (`--hd`, or no scan copy and ≤ 24 frames requested)**: parallel (16 workers)
   `ffmpeg -ss T -i <stream-url> -frames:v 1` at `--height` (default 720; best avc1 ≤ H, else
   any codec ≤ H). If > 24 frames are requested without a scan copy, the CLI downloads the
   scan copy first (cheaper than many seeks).
 
 Output: contact sheets, default `--grid 3x3`, each tile 640 px wide, separated by a thin
 padding line. The timestamp is burned into the tile's corner with `drawtext` only when ffmpeg
-supports it — the default Homebrew ffmpeg does **not** (checked 2026-10-03), so the stdout
+supports it: the default Homebrew ffmpeg does **not** (checked 2026-10-03), so the stdout
 legend is the primary tile→timestamp mapping and burn-in is a bonus. Sheets are written in
 time order as `sheet_<start>_<end>.jpg`.
 `--single` writes individual frames instead of sheets.
@@ -197,10 +197,10 @@ Removes that video's folder, or the whole cache. Prints bytes freed.
 | Situation | Behaviour | Exit |
 |---|---|---|
 | `yt-dlp`/`ffmpeg` missing | print install command | 2 |
-| Bot check / "Sign in to confirm" | retry once with `--cookies-from-browser chrome` (browser overridable via `$CLAUDETUBE_BROWSER`) | — |
+| Bot check / "Sign in to confirm" | retry once with `--cookies-from-browser`, only if the user opted in via `$CLAUDETUBE_BROWSER` | n/a |
 | Still blocked | print `BLOCKED` + reason, SKILL.md switches to Chrome fallback | 3 |
 | No captions | write metadata + chapters, print `NO_CAPTIONS` | 4 |
-| Stream URL expired / HTTP 403 on seek | refresh URL once, retry failed frames | — |
+| Stream URL expired / HTTP 403 on seek | refresh URL once, retry failed frames | n/a |
 | Any single frame still failing | skip it, list it as failed in stdout | 0 |
 | Other errors | message on stderr | 1 |
 
@@ -218,22 +218,22 @@ extension (`javascript_tool`) on the video's watch page:
 Frames in fallback mode: seek `video.currentTime = t`, wait for `seeked`, screenshot. Slower;
 SKILL.md tells Claude to keep the frame count minimal here.
 
-## 6. SKILL.md — the watching strategy
+## 6. SKILL.md: the watching strategy
 
 Trigger: any request to watch, summarize, learn from, or follow a YouTube video.
 
 1. **Always transcript first.** `info` (with `--prefetch` if the goal is visual). For long
    videos, read chapter by chapter as needed.
 2. **Decide the frame budget for this video and this goal** (the core judgement):
-   - *None* — podcasts, interviews, talks, talking heads, or when the question is answerable
+   - *None*: podcasts, interviews, talks, talking heads, or when the question is answerable
      from speech.
-   - *Targeted* — slides/diagrams referenced in speech ("as you can see here"); grab those
+   - *Targeted*: slides/diagrams referenced in speech ("as you can see here"); grab those
      timestamps.
-   - *Dense* — tutorials the user wants to reproduce (software, crafts, code on screen):
+   - *Dense*: tutorials the user wants to reproduce (software, crafts, code on screen):
      `--scenes` over the relevant chapters (sheets from the local scan copy), plus
      `frame --height 1080` wherever an exact value, shortcut or setting must be read and the
      transcript doesn't state it.
-   - *Uniform* — visual content without speech cues (montages, gameplay): `--every`.
+   - *Uniform*: visual content without speech cues (montages, gameplay): `--every`.
 3. Batch: one `frames` call per chapter/range, never one call per frame.
 4. For "follow this tutorial": produce a numbered step list (action, exact values, expected
    result + timestamp) before acting; re-check frames only when a result doesn't match.

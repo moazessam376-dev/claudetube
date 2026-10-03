@@ -1,6 +1,6 @@
 ---
 name: watch-youtube
-description: Watch a YouTube video fast — transcript and chapters first, then exactly the frames the goal needs, packed into contact sheets. Use when given a YouTube link, or asked to watch, summarize, learn from, or follow along with a YouTube video or tutorial.
+description: Watch a YouTube video fast: transcript and chapters first, then exactly the frames the goal needs, packed into contact sheets. Use when given a YouTube link, or asked to watch, summarize, learn from, or follow along with a YouTube video or tutorial.
 ---
 
 # Watch YouTube
@@ -29,7 +29,7 @@ CT info URL [--prefetch]
 
 | Video + goal | Budget | Command |
 |---|---|---|
-| Talk, podcast, interview, explainer where speech carries it | **none** | — |
+| Talk, podcast, interview, explainer where speech carries it | **none** | no frames |
 | Speech points at visuals ("as you can see", slides, a diagram, a result) | **targeted** | `CT frames URL 4:10 7:35 …` |
 | Tutorial to reproduce (software, code, craft) | **dense** | `CT frames URL --scenes --range A-B --max N` per chapter |
 | Visual content without speech cues (montage, gameplay, demo reel) | **uniform** | `CT frames URL --range A-B --every S` |
@@ -55,7 +55,7 @@ HD frame.
 ## 4. Follow along (tutorials)
 
 Before acting, write a numbered step list: action, exact values, expected result, timestamp.
-Work chapter by chapter — watch chapter N (steps 1–3), do it, then move on — so the scan copy and
+Work chapter by chapter: watch chapter N (steps 1–3), do it, then move on, so the scan copy and
 your context stay focused. When a result does not match, re-check frames around that step's
 timestamp before improvising.
 

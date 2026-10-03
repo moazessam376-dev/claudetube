@@ -50,12 +50,14 @@ def is_blocked(stderr: str) -> bool:
 
 
 def ytdlp(args, url) -> subprocess.CompletedProcess:
-    """Run yt-dlp; if YouTube blocks us, retry once with the user's browser cookies."""
+    """Run yt-dlp. If YouTube blocks us and the user opted in with CLAUDETUBE_BROWSER, retry once
+    with that browser's cookies. Cookies are never read unless the user sets that variable."""
     base = ["yt-dlp", "--no-warnings", "--no-progress"]
     r = proc.run(base + args + [url])
     if r.returncode != 0 and is_blocked(r.stderr):
-        browser = os.environ.get("CLAUDETUBE_BROWSER", "chrome")
-        r = proc.run(base + ["--cookies-from-browser", browser] + args + [url])
+        browser = os.environ.get("CLAUDETUBE_BROWSER")
+        if browser:
+            r = proc.run(base + ["--cookies-from-browser", browser] + args + [url])
         if r.returncode != 0 and is_blocked(r.stderr):
             raise Blocked(r.stderr.strip().splitlines()[-1] if r.stderr.strip() else "blocked")
     if r.returncode != 0:

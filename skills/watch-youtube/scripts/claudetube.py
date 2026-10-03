@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ClaudeTube — let Claude watch YouTube fast.
+"""ClaudeTube: let Claude watch YouTube fast.
 
   info    URL [--chapter N] [--lang L] [--prefetch]   transcript + chapters (compact markdown)
   frames  URL T1 T2 ... | --range A-B --every S | --scenes [--range A-B] [--max N]
@@ -295,8 +295,9 @@ def main(argv=None) -> int:
         print(f"MISSING_DEPENDENCY: {e}", file=sys.stderr)
         return 2
     except youtube.Blocked as e:
-        print(f"BLOCKED: YouTube refused yt-dlp even with browser cookies ({e}). "
-              "Use the Chrome-extension fallback described in SKILL.md.", file=sys.stderr)
+        print(f"BLOCKED: YouTube refused yt-dlp ({e}). Use the Chrome-extension fallback in "
+              "fallback.md, or ask the user whether to retry with their browser cookies "
+              "(they set CLAUDETUBE_BROWSER=chrome themselves).", file=sys.stderr)
         return 3
     except (ValueError, KeyError, RuntimeError) as e:
         print(f"ERROR: {e}", file=sys.stderr)

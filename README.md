@@ -87,8 +87,10 @@ about 1.8k image tokens, so ~200 tokens per frame.
   per burst of change, timed at the first settled frame after it.
 - **Storage.** Everything lives in `~/.cache/claudetube/<video-id>/` (override with
   `CLAUDETUBE_CACHE`) and is removed by `cleanup` or after 24 h.
-- **Bot checks.** If YouTube blocks yt-dlp, it retries once with your browser's cookies
-  (`CLAUDETUBE_BROWSER`, default `chrome`). On macOS this may show a Keychain prompt.
+- **Bot checks.** If YouTube blocks yt-dlp, the skill switches to the Chrome fallback below. It
+  never reads your browser cookies unless you opt in by setting `CLAUDETUBE_BROWSER` (for example
+  `chrome`); then it retries once with that browser's YouTube cookies. On macOS that may show a
+  Keychain prompt.
 
 ## Chrome fallback
 

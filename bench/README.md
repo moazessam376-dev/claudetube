@@ -24,7 +24,7 @@ version (4h19m) and ending with a rendered donut.
 
 | Run | Model / effort | Parts | Watch time (until step list written) | Total time | Frames viewed | Tokens | Result screenshot |
 |---|---|---|---|---|---|---|---|
-| reference | Opus 5.5 / ? | 1–8 | — | ~35 min | — | — | (in the post) |
+| reference | Opus 5.5 / ? | 1–8 | n/a | ~35 min | n/a | n/a | (in the post) |
 | 1 | Opus 5.5 / medium | | | | | | |
 | 2 | Opus 5.5 / high | | | | | | |
 

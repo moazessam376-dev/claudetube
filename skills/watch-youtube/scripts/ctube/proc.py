@@ -20,7 +20,7 @@ else:
 def need(*bins):
     for b in bins:
         if not shutil.which(b):
-            raise MissingDep(f"{b} not found on PATH — {INSTALL_HINT}")
+            raise MissingDep(f"{b} not found on PATH. {INSTALL_HINT}")
 
 
 def run(args, timeout=None) -> subprocess.CompletedProcess:

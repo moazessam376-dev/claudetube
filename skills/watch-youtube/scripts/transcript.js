@@ -1,7 +1,7 @@
 // ClaudeTube Chrome fallback: run on a youtube.com/watch page (Claude in Chrome → javascript_tool).
 // Returns a compact text block: title, duration, chapters, and "[mm:ss] text" transcript lines.
 // The full result is also kept in window.__claudetube.text; long transcripts are returned in
-// pages — fetch the next one with: window.__claudetube.page(N)
+// pages; fetch the next one with: window.__claudetube.page(N)
 (async () => {
   const PAGE = 40000;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -115,5 +115,5 @@
   const text = head + "\n" + lines.join("\n");
   const pages = Math.max(1, Math.ceil(text.length / PAGE));
   window.__claudetube = { text, pages, page: (n) => text.slice(n * PAGE, (n + 1) * PAGE) };
-  return pages === 1 ? text : `${text.slice(0, PAGE)}\n\n[page 1/${pages} — next: window.__claudetube.page(1)]`;
+  return pages === 1 ? text : `${text.slice(0, PAGE)}\n\n[page 1/${pages}, next: window.__claudetube.page(1)]`;
 })();

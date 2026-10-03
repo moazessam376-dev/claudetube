@@ -44,10 +44,10 @@ only through `ctube.proc.run`, so everything else is unit-testable offline.
 - Create: `skills/watch-youtube/scripts/ctube/__init__.py`, `ctube/timefmt.py`, `ctube/cache.py`
 - Test: `tests/test_timefmt.py`, `tests/test_cache.py`, `tests/conftest.py` (adds scripts dir to sys.path)
 
-**Interfaces — Produces:**
-- `timefmt.parse_time(s: str) -> float` — accepts `SS`, `SS.s`, `MM:SS`, `HH:MM:SS`; raises `ValueError` otherwise.
-- `timefmt.fmt_time(sec: float) -> str` — `MM:SS` under 1 h, else `H:MM:SS`.
-- `timefmt.parse_range(s: str) -> tuple[float, float]` — `"A-B"`; raises if B ≤ A.
+**Interfaces produced:**
+- `timefmt.parse_time(s: str) -> float`: accepts `SS`, `SS.s`, `MM:SS`, `HH:MM:SS`; raises `ValueError` otherwise.
+- `timefmt.fmt_time(sec: float) -> str`: `MM:SS` under 1 h, else `H:MM:SS`.
+- `timefmt.parse_range(s: str) -> tuple[float, float]`: `"A-B"`; raises if B ≤ A.
 - `cache.root() -> Path`, `cache.video_dir(video_id) -> Path` (created), `cache.sweep(max_age_s=86400) -> int` (dirs removed), `cache.remove(video_id) -> int` (bytes freed), `cache.remove_all() -> int`.
 
 Tests: `parse_time("90")==90`, `("1:30")==90`, `("1:02:03")==3723`, `("12.5")==12.5`, raises on `"abc"`, `"1:2:3:4"`, `"-5"`; `fmt_time(65)=="01:05"`, `fmt_time(3723)=="1:02:03"`; `parse_range("1:00-2:00")==(60,120)`, raises on `"2:00-1:00"`; sweep removes a dir with mtime 25 h old and keeps a fresh one; remove returns >0 bytes and deletes dir.
@@ -58,12 +58,12 @@ Tests: `parse_time("90")==90`, `("1:30")==90`, `("1:02:03")==3723`, `("12.5")==1
 
 **Files:** Create `ctube/captions.py`; Test `tests/test_captions.py`, fixtures `tests/fixtures/auto.json3` (first ~150 events of the real donut video), `tests/fixtures/manual.json3` (hand-written, 4 events with `\n`).
 
-**Interfaces — Produces:**
-- `captions.parse_json3(data: dict) -> list[tuple[float, str]]` — word/fragment level `(t_seconds, text)`; skips `"\n"`-only segs; seg time = `(tStartMs + tOffsetMs)/1000`; collapses whitespace; strips `[Music]`-style tags? No — keep them (they carry meaning).
-- `captions.paragraphs(frags, min_len=20.0, max_len=35.0) -> list[tuple[float, str]]` — start a new paragraph when current span ≥ min_len and the fragment ends with `.?!`, or span ≥ max_len.
-- `captions.render(meta: dict, paras) -> str` — markdown per spec §4.1; chapters from `meta["chapters"]` (`start_time`, `title`), paragraphs grouped under `### N. title` by start time; no chapters → single `## Transcript` section without `###`.
-- `captions.chapter_section(md: str, n: int) -> str` — returns `### n.` section text; raises `KeyError` if absent.
-- `captions.estimate_tokens(s: str) -> int` — `len(s)//4`.
+**Interfaces produced:**
+- `captions.parse_json3(data: dict) -> list[tuple[float, str]]`: word/fragment level `(t_seconds, text)`; skips `"\n"`-only segs; seg time = `(tStartMs + tOffsetMs)/1000`; collapses whitespace; strips `[Music]`-style tags? No, keep them (they carry meaning).
+- `captions.paragraphs(frags, min_len=20.0, max_len=35.0) -> list[tuple[float, str]]`: start a new paragraph when current span ≥ min_len and the fragment ends with `.?!`, or span ≥ max_len.
+- `captions.render(meta: dict, paras) -> str`: markdown per spec §4.1; chapters from `meta["chapters"]` (`start_time`, `title`), paragraphs grouped under `### N. title` by start time; no chapters → single `## Transcript` section without `###`.
+- `captions.chapter_section(md: str, n: int) -> str`: returns `### n.` section text; raises `KeyError` if absent.
+- `captions.estimate_tokens(s: str) -> int`: `len(s)//4`.
 
 Tests: fixture auto parses to first fragment `(0.08, "So,")`; no `"\n"` fragments; manual fixture yields lines split on `\n` joined with spaces; paragraphs never exceed max_len span; paragraph text concatenates all fragments (no word lost: joined words == joined paragraph words); render with 2 chapters puts paragraph at t=10 under chapter 1 and t=100 under chapter 2 when chapter 2 starts at 50; render with no chapters has no `###`; chapter_section(…,2) returns only chapter 2.
 
@@ -73,11 +73,11 @@ Tests: fixture auto parses to first fragment `(0.08, "So,")`; no `"\n"` fragment
 
 **Files:** Create `ctube/scenes.py`; Test `tests/test_scenes.py`.
 
-**Interfaces — Produces:**
+**Interfaces produced:**
 - `scenes.detect(frames: Iterable[bytes], w: int, h: int, start: float = 0.0, fps: float = 1.0, grid=(16, 9), pix_thresh=6, noisy_frac=0.4, threshold=…, ) -> list[Event]`
-- `Event = namedtuple("Event", "t strength")` — `t` = first stable second after a burst (seconds, absolute).
-- `scenes.limit(events, max_n) -> list[Event]` — strongest `max_n`, re-sorted by `t`.
-- `scenes.read_raw(stream, w, h) -> Iterator[bytes]` — chunks a raw gray stream into frames.
+- `Event = namedtuple("Event", "t strength")`: `t` = first stable second after a burst (seconds, absolute).
+- `scenes.limit(events, max_n) -> list[Event]`: strongest `max_n`, re-sorted by `t`.
+- `scenes.read_raw(stream, w, h) -> Iterator[bytes]`: chunks a raw gray stream into frames.
 
 Tests (synthetic 64x36 gray frames): all-identical → `[]`; a region (cells in bottom-right 4x3) changing every frame + otherwise static → `[]` (masked); full-frame switch at frame 10 then static → one event with `t == start + 11`; a 3-frame burst (frames 10–12 changing) → one event at `t == 13`; burst reaching the end without settling → event at last frame time; `limit` keeps strongest and returns time-sorted.
 
@@ -87,21 +87,21 @@ Tests (synthetic 64x36 gray frames): all-identical → `[]`; a region (cells in 
 
 **Files:** Create `ctube/proc.py`, `ctube/youtube.py`, `ctube/frames.py`; Test `tests/test_youtube.py`, `tests/test_frames.py`.
 
-**Interfaces — Produces:**
+**Interfaces produced:**
 - `proc.run(args: list[str], timeout=None) -> CompletedProcess` (text, captured); `proc.need(*bins)` raises `MissingDep(name)`.
-- `youtube.video_id(url_or_id: str) -> str` — handles `watch?v=`, `youtu.be/`, `shorts/`, `live/`, `embed/`, bare 11-char id; raises `ValueError`.
-- `youtube.Blocked(Exception)`, `youtube.is_blocked(stderr: str) -> bool` — matches "Sign in to confirm", "not a bot", "HTTP Error 429".
-- `youtube.ytdlp(args, url) -> CompletedProcess` — runs, retries once with `--cookies-from-browser $CLAUDETUBE_BROWSER` if blocked, raises `Blocked`.
-- `youtube.fetch_info(url, vdir, lang=None) -> dict` — one call `-J --no-simulate --skip-download --write-subs --write-auto-subs --sub-format json3 --sub-langs <pick>`; writes `meta.json`; returns meta incl. `caption_file` or None.
-- `youtube.pick_sub_langs(lang) -> str` — default `"en,en-orig,.*-orig"`… implemented as: `lang` given → `f"{lang},{lang}-orig"`; else `"en,en-orig,en-US,en-GB"` then fallback second call with `".*-orig"` if no file produced.
-- `youtube.stream_url(url, vdir, height) -> str` — cached in `meta.json` under `streams[str(height)]` with `expire` from the URL's `expire=` param; refreshed when < 5 min left or `force=True`.
-- `youtube.start_prefetch(url, vdir)` — detached `Popen` of `claudetube.py _scan URL` (start_new_session); `youtube.download_scan(url, vdir)` writes `scan.status` (`running pid ts` / `done` / `failed msg`) and `scan.mp4`.
-- `youtube.ensure_scan(url, vdir, timeout=1800) -> Path` — waits on a running prefetch whose pid is alive; stale/failed → downloads itself.
-- `frames.grab_hd(stream_url, times, outdir, workers=16) -> dict[float, Path|None]` — retries failures once via callback that refreshes the URL.
-- `frames.grab_local(scan, times, outdir) -> dict[float, Path|None]` — parallel `ffmpeg -ss t -i scan.mp4 -frames:v 1`.
-- `frames.layout(times, cols, rows) -> list[list[float]]` — chunks into sheets.
-- `frames.build_sheet(paths, cols, rows, tile_w, out) -> Path` — ffmpeg `xstack`/`tile` with black padding for missing cells; `drawtext` labels only if `has_drawtext()`.
-- `frames.legend(sheet_path, times, cols) -> str` — `"<path>\n  r1: 01:25 01:30 01:35\n  r2: …"`.
+- `youtube.video_id(url_or_id: str) -> str`: handles `watch?v=`, `youtu.be/`, `shorts/`, `live/`, `embed/`, bare 11-char id; raises `ValueError`.
+- `youtube.Blocked(Exception)`, `youtube.is_blocked(stderr: str) -> bool`: matches "Sign in to confirm", "not a bot", "HTTP Error 429".
+- `youtube.ytdlp(args, url) -> CompletedProcess`: runs, if blocked and the user set `$CLAUDETUBE_BROWSER`, retries once with `--cookies-from-browser`; raises `Blocked`.
+- `youtube.fetch_info(url, vdir, lang=None) -> dict`: one call `-J --no-simulate --skip-download --write-subs --write-auto-subs --sub-format json3 --sub-langs <pick>`; writes `meta.json`; returns meta incl. `caption_file` or None.
+- `youtube.pick_sub_langs(lang) -> str`: default `"en,en-orig,.*-orig"`… implemented as: `lang` given → `f"{lang},{lang}-orig"`; else `"en,en-orig,en-US,en-GB"` then fallback second call with `".*-orig"` if no file produced.
+- `youtube.stream_url(url, vdir, height) -> str`: cached in `meta.json` under `streams[str(height)]` with `expire` from the URL's `expire=` param; refreshed when < 5 min left or `force=True`.
+- `youtube.start_prefetch(url, vdir)`: detached `Popen` of `claudetube.py _scan URL` (start_new_session); `youtube.download_scan(url, vdir)` writes `scan.status` (`running pid ts` / `done` / `failed msg`) and `scan.mp4`.
+- `youtube.ensure_scan(url, vdir, timeout=1800) -> Path`: waits on a running prefetch whose pid is alive; stale/failed → downloads itself.
+- `frames.grab_hd(stream_url, times, outdir, workers=16) -> dict[float, Path|None]`: retries failures once via callback that refreshes the URL.
+- `frames.grab_local(scan, times, outdir) -> dict[float, Path|None]`: parallel `ffmpeg -ss t -i scan.mp4 -frames:v 1`.
+- `frames.layout(times, cols, rows) -> list[list[float]]`: chunks into sheets.
+- `frames.build_sheet(paths, cols, rows, tile_w, out) -> Path`: ffmpeg `xstack`/`tile` with black padding for missing cells; `drawtext` labels only if `has_drawtext()`.
+- `frames.legend(sheet_path, times, cols) -> str`: `"<path>\n  r1: 01:25 01:30 01:35\n  r2: …"`.
 
 Tests: video_id for 6 URL shapes + bad input; is_blocked positives/negatives; stream expiry parsing from a URL with `expire=1791005546`; layout of 20 times at 3x3 → sheets of 9, 9, 2; legend row formatting; ytdlp retry logic with `proc.run` monkeypatched (first blocked, second ok → ok; both blocked → `Blocked`); ensure_scan with stale pid status re-downloads (monkeypatch download_scan).
 
