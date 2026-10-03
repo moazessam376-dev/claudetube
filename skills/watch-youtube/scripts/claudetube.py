@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """ClaudeTube: let Claude watch YouTube fast.
 
-  info    URL [--chapter N] [--lang L] [--prefetch]   transcript + chapters (compact markdown)
+  info    URL [--chapter N] [--part K] [--lang L] [--prefetch]   transcript + chapters
+  find    URL TERM [TERM ...] [--regex] [--limit N]      search the transcript
   frames  URL T1 T2 ... | --range A-B --every S | --scenes [--range A-B] [--max N]
-          [--grid CxR] [--hd] [--height H] [--single]  contact sheets of many frames
+          [--grid CxR] [--hd] [--height H] [--single] [--keep-promos]  contact sheets
   frame   URL T [--height 1080]                        one full-resolution frame
   cleanup [URL | --all]                                delete cached data
 
@@ -12,16 +13,17 @@ Exit codes: 0 ok, 1 error, 2 missing yt-dlp/ffmpeg, 3 blocked by YouTube, 4 no c
 import argparse
 import json
 import os
+import re
 import signal
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ctube import cache, captions, frames, proc, scenes, youtube  # noqa: E402
+from ctube import cache, captions, frames, proc, promos, scenes, youtube  # noqa: E402
 from ctube.timefmt import fmt_time, parse_range, parse_time  # noqa: E402
 
-FULL_PRINT_TOKENS = 12000
+PART_CHARS = 20000  # one printed page; tool results get cut off well above this
 SEGMENT_S = 600  # synthetic chapter length for long videos without chapters
 HD_SEEK_LIMIT = 24  # more frames than this without a scan copy -> download the scan copy instead
 
@@ -57,18 +59,20 @@ def _summary(md: str, path: Path) -> str:
             sec = captions.chapter_section(md, n)
         except KeyError:
             break
-        lines.append(f"  {n}. ~{captions.estimate_tokens(sec)} tokens")
+        parts = len(captions.split_parts(sec, PART_CHARS))
+        lines.append(f"  {n}. ~{captions.estimate_tokens(sec)} tokens"
+                     + (f" (prints in {parts} parts)" if parts > 1 else ""))
         n += 1
-    lines += ["", f"Read a chapter with: info URL --chapter N   (full file: {path})"]
+    lines += ["", f"Read a chapter with: info URL --chapter N [--part K]   (full file: {path})"]
     return "\n".join(lines)
 
 
-def cmd_info(a):
-    vid, url, vdir = _ctx(a.url)
+def _load_transcript(url, vdir, lang=None):
+    """(meta, transcript markdown, its path), fetching and rendering it if not cached."""
     md_path = vdir / "transcript.md"
     meta = youtube.load_meta(vdir)
-    if a.lang or not (meta and md_path.exists()):
-        meta = youtube.fetch_info(url, vdir, a.lang)
+    if lang or not (meta and md_path.exists()):
+        meta = youtube.fetch_info(url, vdir, lang)
         cap = meta["caption"]["file"]
         paras = []
         if cap:
@@ -85,15 +89,44 @@ def cmd_info(a):
         for p in vdir.glob("subs.*.json3"):
             p.unlink()
         md_path.write_text(captions.render(meta, paras), encoding="utf-8")
+    return meta, md_path.read_text(encoding="utf-8"), md_path
+
+
+def _promo_segments(meta, md):
+    paras = [(t, text) for t, text, _ in captions.parse_md(md)]
+    return promos.find(paras, float(meta.get("duration") or 0), meta.get("chapters") or [])
+
+
+def _fmt_segs(segs):
+    return ", ".join(f"{fmt_time(s)}-{fmt_time(e)}" for s, e in segs)
+
+
+def _print_paged(text, part, what, cmd):
+    parts = captions.split_parts(text, PART_CHARS)
+    if not 1 <= part <= len(parts):
+        raise ValueError(f"{what} has {len(parts)} part(s); --part {part} is out of range")
+    out(parts[part - 1].rstrip("\n"))
+    if part < len(parts):
+        out(f"\n[part {part}/{len(parts)} of {what}. Next: {cmd} --part {part + 1}]")
+
+
+def cmd_info(a):
+    vid, url, vdir = _ctx(a.url)
+    meta, md, md_path = _load_transcript(url, vdir, a.lang)
     if a.prefetch:
         youtube.start_prefetch(url, vdir, Path(__file__).resolve())
-    md = md_path.read_text(encoding="utf-8")
+    segs = _promo_segments(meta, md)
     if a.chapter:
-        out(captions.chapter_section(md, a.chapter))
-    elif captions.estimate_tokens(md) <= FULL_PRINT_TOKENS:
-        out(md)
+        sec = captions.chapter_section(md, a.chapter)
+        _print_paged(sec, a.part or 1, f"chapter {a.chapter}", f"info URL --chapter {a.chapter}")
+        ts = [t for t, _, ch in captions.parse_md(md) if ch == a.chapter]
+        segs = [g for g in segs if ts and g[0] <= ts[-1] and g[1] > ts[0]]
+    elif a.part or len(md) <= PART_CHARS or "\n### " not in md:
+        _print_paged(md, a.part or 1, "the transcript", "info URL")
     else:
         out(_summary(md, md_path))
+    if segs:
+        out(f"Likely promo/sponsor segments (frames skip them unless --keep-promos): {_fmt_segs(segs)}")
     if a.prefetch:
         out("(scan copy downloading in the background for fast frames)")
     if not meta["caption"]["file"]:
@@ -112,9 +145,14 @@ def _times(a, meta, url, vdir):
         raw = frames.tiny_frames(scan, *(rng if a.range else (None, None)))
         evs = scenes.detect(scenes.split_raw(raw, 32, 18), 32, 18, start=rng[0],
                             threshold=a.threshold)
-        kept = scenes.limit(evs, a.max)
-        out(f"scene changes found: {len(evs)}; showing {len(kept)}"
-            + ("" if len(kept) == len(evs) else f" strongest (raise --max to see more)"))
+        segs = _skip_segments(a, meta, vdir, rng)
+        all_evs, evs = evs, [e for e in evs if not promos.inside(e.t, segs)]
+        kept = scenes.limit(evs, a.max, *rng)
+        out(f"scene changes found: {len(all_evs)}; showing {len(kept)}"
+            + ("" if len(kept) == len(evs) else " spread across the range (raise --max to see more)"))
+        if len(evs) < len(all_evs):
+            out(f"skipped {len(all_evs) - len(evs)} in likely promo segments: {_fmt_segs(segs)}"
+                " (--keep-promos to include)")
         chapters = meta.get("chapters") or []
         if chapters and evs:
             for i, c in enumerate(chapters):
@@ -130,10 +168,24 @@ def _times(a, meta, url, vdir):
         while t <= rng[1]:
             ts.append(t)
             t += a.every
-        return ts
+        segs = _skip_segments(a, meta, vdir, rng)
+        kept = [t for t in ts if not promos.inside(t, segs)]
+        if len(kept) < len(ts):
+            out(f"skipped {len(ts) - len(kept)} frame(s) in likely promo segments: {_fmt_segs(segs)}"
+                " (--keep-promos to include)")
+        return kept
     if a.times:
         return [parse_time(t) for t in a.times]
     raise ValueError("give timestamps, --range A-B --every S, or --scenes")
+
+
+def _skip_segments(a, meta, vdir, rng):
+    """Promo segments overlapping the range, from the cached transcript (none if not cached)."""
+    md_path = vdir / "transcript.md"
+    if a.keep_promos or not md_path.exists():
+        return []
+    segs = _promo_segments(meta, md_path.read_text(encoding="utf-8"))
+    return [(s, e) for s, e in segs if s < rng[1] and e > rng[0]]
 
 
 def _check_times(ts, meta):
@@ -185,6 +237,22 @@ def cmd_frames(a):
         g_rows = min(rows, -(-len(g) // cols))  # no empty rows on a partly filled sheet
         p = frames.build_sheet([got[t] for t in g], cols, g_rows, tile_w, sdir / name)
         out(frames.legend(p, g, cols, failed))
+    return 0
+
+
+def cmd_find(a):
+    vid, url, vdir = _ctx(a.url)
+    meta, md, _ = _load_transcript(url, vdir)
+    try:
+        hits = captions.search(captions.parse_md(md), a.terms, regex=a.regex)
+    except re.error as e:
+        raise ValueError(f"bad pattern: {e}") from None
+    if not hits:
+        out("no matches")
+        return 0
+    out(f"{len(hits)} paragraph(s) match" + (f", showing the first {a.limit}" if len(hits) > a.limit else ""))
+    for t, ch, snippet in hits[:a.limit]:
+        out(f"[{fmt_time(t)}]" + (f" ch{ch}" if ch else "") + f" {snippet}")
     return 0
 
 
@@ -241,9 +309,17 @@ def build_parser():
     s = sub.add_parser("info", help="transcript + chapters")
     s.add_argument("url")
     s.add_argument("--chapter", type=int)
+    s.add_argument("--part", type=int, help="page K of a long chapter or transcript")
     s.add_argument("--lang")
     s.add_argument("--prefetch", action="store_true", help="download the low-res scan copy in the background")
     s.set_defaults(fn=cmd_info)
+
+    s = sub.add_parser("find", help="search the transcript (case-insensitive)")
+    s.add_argument("url")
+    s.add_argument("terms", nargs="+")
+    s.add_argument("--regex", action="store_true", help="treat terms as regular expressions")
+    s.add_argument("--limit", type=int, default=40)
+    s.set_defaults(fn=cmd_find)
 
     s = sub.add_parser("frames", help="contact sheets of many frames")
     s.add_argument("url")
@@ -257,6 +333,8 @@ def build_parser():
     s.add_argument("--hd", action="store_true", help="frames from the HD stream instead of the scan copy")
     s.add_argument("--height", type=int, default=720)
     s.add_argument("--single", action="store_true", help="individual frames, no sheets")
+    s.add_argument("--keep-promos", action="store_true",
+                   help="include likely sponsor/donation segments (--scenes and --every skip them)")
     s.set_defaults(fn=cmd_frames)
 
     s = sub.add_parser("frame", help="one full-resolution frame")

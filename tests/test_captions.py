@@ -73,3 +73,48 @@ def test_estimate_tokens():
 def test_paragraph_breaks_at_chapter_start():
     frags = [(0, "a"), (5, "b"), (10, "c")]
     assert captions.paragraphs(frags, breaks=[6]) == [(0, "a b"), (10, "c")]
+
+
+MD = """# T
+C
+
+## Transcript
+
+### 1. [00:00] Intro
+[00:00] Set the scale to 0.12 and the radius to 1.5.
+[00:30] Then add a subdivision surface modifier.
+
+### 2. [01:00] Build
+[1:00:05] Change the roughness (0.12) again.
+"""
+
+
+def test_parse_md():
+    assert captions.parse_md(MD) == [
+        (0.0, "Set the scale to 0.12 and the radius to 1.5.", 1),
+        (30.0, "Then add a subdivision surface modifier.", 1),
+        (3605.0, "Change the roughness (0.12) again.", 2),
+    ]
+
+
+def test_split_parts_keeps_lines_whole():
+    text = "\n".join(f"[00:{i:02d}] " + "x" * 50 for i in range(40)) + "\n"
+    parts = captions.split_parts(text, 500)
+    assert len(parts) > 1 and "".join(parts) == text
+    assert all(len(p) <= 500 for p in parts)
+    assert all(p.endswith("\n") for p in parts)
+
+
+def test_search_literal_and_regex():
+    paras = captions.parse_md(MD)
+    hits = captions.search(paras, ["0.12"])
+    assert [(t, ch) for t, ch, _ in hits] == [(0.0, 1), (3605.0, 2)]
+    assert captions.search(paras, ["0x12"]) == []  # '.' is literal unless --regex
+    assert len(captions.search(paras, [r"\d+\.\d+"], regex=True)) == 2
+    assert captions.search(paras, ["SUBDIVISION"])[0][0] == 30.0
+
+
+def test_search_snippet_ellipses():
+    paras = [(0.0, "a" * 200 + " needle " + "b" * 200, 1)]
+    (_, _, snip), = captions.search(paras, ["needle"], width=10)
+    assert snip.startswith("...") and snip.endswith("...") and "needle" in snip

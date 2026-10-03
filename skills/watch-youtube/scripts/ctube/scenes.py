@@ -60,9 +60,26 @@ def detect(frames, w, h, start=0.0, fps=1.0, pix_thresh=8, noisy_frac=0.4,
     return events
 
 
-def limit(events, max_n: int) -> "list[Event]":
-    """Keep the max_n strongest events, in time order."""
+def limit(events, max_n: int, start=None, end=None) -> "list[Event]":
+    """Keep max_n events spread over the range, in time order.
+
+    The range [start, end) is cut into max_n equal slices and the strongest event of each
+    non-empty slice is kept, so quiet stretches still get frames. Slots left by empty slices go
+    to the strongest remaining events anywhere.
+    """
     if len(events) <= max_n:
         return list(events)
-    strongest = sorted(events, key=lambda e: e.strength, reverse=True)[:max_n]
-    return sorted(strongest, key=lambda e: e.t)
+    if max_n <= 0:
+        return []
+    lo = events[0].t if start is None else start
+    hi = end if end is not None and end > lo else events[-1].t + 1  # no usable end: event span
+    width = max(hi - lo, 1e-9) / max_n
+    best = {}
+    for e in events:
+        k = min(max(int((e.t - lo) / width), 0), max_n - 1)
+        if k not in best or e.strength > best[k].strength:
+            best[k] = e
+    kept = set(best.values())
+    rest = sorted((e for e in events if e not in kept), key=lambda e: e.strength, reverse=True)
+    kept.update(rest[:max_n - len(kept)])
+    return sorted(kept, key=lambda e: e.t)
