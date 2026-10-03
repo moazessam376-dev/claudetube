@@ -38,10 +38,11 @@ except to YouTube, and collects nothing. See [PRIVACY.md](PRIVACY.md).
 
 | Command | What you get |
 |---|---|
-| `claudetube.py info URL [--prefetch]` | Title, chapters, and a compact `[mm:ss]` transcript merged into ~25 s paragraphs, split by chapter (`--chapter N` for long videos). |
+| `claudetube.py info URL [--prefetch]` | Title, chapters, and a compact `[mm:ss]` transcript merged into ~25 s paragraphs, split by chapter (`--chapter N`, long chapters page with `--part K`). Lists likely sponsor/donation segments. |
+| `claudetube.py find URL TERM … [--regex]` | Transcript lines mentioning a word or number, with timestamps and chapter. |
 | `claudetube.py frames URL 1:25 4:10 …` | Frames at those times, as 3x3 contact sheets plus a legend mapping each tile to its timestamp. |
 | `claudetube.py frames URL --range A-B --every S` | Uniform sampling. |
-| `claudetube.py frames URL --scenes [--range A-B] [--max N]` | One frame per *settled* on-screen change, with webcam overlays and cursor jitter ignored. Reports change counts per chapter. |
+| `claudetube.py frames URL --scenes [--range A-B] [--max N]` | One frame per *settled* on-screen change, with webcam overlays and cursor jitter ignored, spread across the range. Skips likely promo segments (`--keep-promos` to include). Reports change counts per chapter. |
 | `claudetube.py frame URL T` | One full 1080p frame for reading exact values. |
 | `claudetube.py cleanup URL` / `--all` | Deletes cached data. Anything older than 24 h is swept automatically. |
 

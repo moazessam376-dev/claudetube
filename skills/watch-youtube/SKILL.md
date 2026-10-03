@@ -23,6 +23,9 @@ CT info URL [--prefetch]
   me"). It starts a background download of a low-res scan copy so later frames are instant.
 - Short videos print in full. Long ones print the chapter list with token counts; read the
   chapters the goal needs with `CT info URL --chapter N` (several chapters → parallel calls).
+  Long chapters print in parts; the output ends with the `--part K` command for the next one.
+- It also lists likely sponsor, donation and self-promotion segments. `--scenes` and `--every`
+  skip them automatically (`--keep-promos` to include them).
 - Done when you know what happens when: you can name the timestamps where the screen matters.
 
 ## 2. Choose the frame budget
@@ -36,7 +39,8 @@ CT info URL [--prefetch]
 
 - `--scenes` returns one frame per settled on-screen change (webcam overlays and cursor motion
   are ignored) and reports how many changes each chapter has. Start with `--max 30`–`60` per
-  chapter; raise it where the transcript is vague and the screen is busy.
+  chapter; raise it where the transcript is vague and the screen is busy. Frames are spread
+  over the whole range, so quiet stretches still get covered.
 - Sheets are 3x3 by default (~200 tokens per frame). They show shapes, layouts, menus and
   on-screen shortcut overlays well; small text such as numeric fields needs step 3.
 - Done when every timestamp you named in step 1 is covered by a sheet you have read.
@@ -44,13 +48,16 @@ CT info URL [--prefetch]
 ## 3. Read exact values
 
 ```
-CT frame URL 33:00              # one 1080p frame
-CT frames URL 33:00 33:05 --grid 2x2   # 2x2 sheet from the HD stream
+CT find URL "roughness" "0.12"            # transcript lines that mention it, with timestamps
+CT find URL '\d+\.\d+' --regex            # every decimal number said in the video
+CT frame URL 33:00                        # one 1080p frame
+CT frames URL 33:00 33:05 --grid 2x2      # 2x2 sheet from the HD stream
 ```
 
-Use this wherever an exact number, setting, shortcut or line of code must be copied and the
-transcript does not say it. Done when every value you will act on came from the transcript or an
-HD frame.
+Use this wherever an exact number, setting, shortcut or line of code must be copied. Search the
+transcript first to find where it is mentioned, then grab HD frames at those timestamps if the
+transcript does not say the value. Done when every value you will act on came from the transcript
+or an HD frame.
 
 ## 4. Follow along (tutorials)
 

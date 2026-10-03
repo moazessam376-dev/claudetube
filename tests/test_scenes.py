@@ -58,3 +58,20 @@ def test_limit_keeps_strongest_sorted_by_time():
 
 def test_split_raw_drops_partial_frame():
     assert split_raw(b"\0" * (N * 2 + 5), W, H) == [b"\0" * N] * 2
+
+
+def test_limit_spreads_over_range():
+    # a weak change early, many strong ones late: the early one must still get a frame
+    ev = [Event(5, 0.1)] + [Event(90 + i, 5.0 + i) for i in range(10)]
+    kept = limit(ev, 4, 0, 100)
+    assert len(kept) == 4 and Event(5, 0.1) in kept
+    assert kept == sorted(kept, key=lambda e: e.t)
+
+
+def test_limit_fills_empty_slices_with_strongest():
+    ev = [Event(t, float(t)) for t in range(90, 100)]  # all in the last slice
+    assert [e.t for e in limit(ev, 3, 0, 100)] == [97, 98, 99]
+
+
+def test_limit_zero():
+    assert limit([Event(1, 1.0), Event(2, 2.0)], 0) == []
