@@ -153,8 +153,10 @@ def cmd_frames(a):
         out("no frames selected")
         return 0
     detail = a.hd or cols <= 2
-    use_local = not detail and (youtube.scan_file(vdir) or youtube.prefetch_running(vdir)
-                                or a.scenes or len(ts) > HD_SEEK_LIMIT)
+    # Local scan copy when it's ready (instant) or when there are too many frames for HD seeks;
+    # a few frames while the prefetch is still running are faster as HD seeks than waiting.
+    scan_ready = youtube.scan_file(vdir) and not youtube.prefetch_running(vdir)
+    use_local = not detail and (scan_ready or a.scenes or len(ts) > HD_SEEK_LIMIT)
     fdir = vdir / "frames"
     if use_local:
         got = frames.grab_local(youtube.ensure_scan(url, vdir), ts, fdir)
@@ -173,7 +175,8 @@ def cmd_frames(a):
         + (" (! = frame failed, black tile)" if failed else ""))
     for g in groups:
         name = f"sheet_{int(g[0]):06d}_{int(g[-1]):06d}_{cols}x{rows}{'_hd' if not use_local else ''}.jpg"
-        p = frames.build_sheet([got[t] for t in g], cols, rows, tile_w, sdir / name)
+        g_rows = min(rows, -(-len(g) // cols))  # no empty rows on a partly filled sheet
+        p = frames.build_sheet([got[t] for t in g], cols, g_rows, tile_w, sdir / name)
         out(frames.legend(p, g, cols, failed))
     return 0
 
@@ -266,6 +269,8 @@ def build_parser():
 
 
 def main(argv=None) -> int:
+    if hasattr(signal, "SIGPIPE"):
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # quiet exit when piped into `head`
     a = build_parser().parse_args(argv)
     try:
         cache.sweep()
