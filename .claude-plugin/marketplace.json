@@ -1,6 +1,10 @@
 {
   "name": "claudetube",
-  "owner": { "name": "moazessam376-dev", "url": "https://github.com/moazessam376-dev" },
+  "description": "ClaudeTube: let Claude watch YouTube fast \u2014 transcript first, then exactly the frames it needs.",
+  "owner": {
+    "name": "moazessam376-dev",
+    "url": "https://github.com/moazessam376-dev"
+  },
   "plugins": [
     {
       "name": "claudetube",
