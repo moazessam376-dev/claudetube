@@ -5,7 +5,7 @@ Reference: Claude following the Blender Guru donut tutorial took **35 minutes**
 
 ## Setup
 
-- Claude Code with the ClaudeTube plugin installed (`/plugin install claudetube@claudetube`)
+- Claude Code with the ClaudeTube plugin installed (`/plugin install claudetubeskim@claudetube`)
 - Blender running with the Blender MCP server connected
 - Model: Opus 5.5, effort **medium**, then repeat at **high**
 - Fresh session, empty cache (`claudetube.py cleanup --all`)

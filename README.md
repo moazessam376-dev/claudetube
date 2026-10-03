@@ -13,7 +13,7 @@ that is deleted afterwards.
 
 ```
 /plugin marketplace add moazessam376-dev/claudetube
-/plugin install claudetube@claudetube
+/plugin install claudetubeskim@claudetube
 ```
 
 Requirements: Python 3.9+, plus `yt-dlp` and `ffmpeg` on your PATH:
