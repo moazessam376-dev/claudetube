@@ -18,10 +18,18 @@
   const resp = (player && player.getPlayerResponse && player.getPlayerResponse()) || window.ytInitialPlayerResponse || {};
   const vd = resp.videoDetails || {};
 
-  // Chapters: from the chapter markers rendered in the description / panel.
+  // Chapters: from the page data (only if it belongs to this video), else the rendered markers.
   const chapters = [];
   const seen = new Set();
-  for (const el of document.querySelectorAll("ytd-macro-markers-list-item-renderer")) {
+  const init = window.ytInitialData;
+  if (init && init.currentVideoEndpoint?.watchEndpoint?.videoId === vd.videoId) {
+    const re = /"chapterRenderer":\{"title":\{"simpleText":"((?:[^"\\]|\\.)*)"\},"timeRangeStartMillis":(\d+)/g;
+    for (const m of JSON.stringify(init).matchAll(re)) {
+      const time = fmt(+m[2] / 1000);
+      if (!seen.has(time)) { seen.add(time); chapters.push(`[${time}] ${JSON.parse(`"${m[1]}"`)}`); }
+    }
+  }
+  if (!chapters.length) for (const el of document.querySelectorAll("ytd-macro-markers-list-item-renderer")) {
     const title = el.querySelector("h4")?.textContent?.trim();
     const time = el.querySelector("#time")?.textContent?.trim();
     if (title && time && tsRe.test(time) && !seen.has(time)) {
