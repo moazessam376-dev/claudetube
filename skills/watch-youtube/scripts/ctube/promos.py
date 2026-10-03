@@ -8,7 +8,8 @@ import re
 
 _STRONG = re.compile(
     r"sponsored by|this video is sponsored|for sponsoring|for supporting this video|today'?s sponsor"
-    r"|use (?:my |the )?code (?-i:[A-Z0-9]{3,})\b|promo code|\d+ ?% off\b|percent off\b"
+    r"|use (?:my |the )?code (?-i:[A-Z0-9]{3,})\b|promo code"
+    r"|(?:\d+ ?%|percent) off (?:your|the|all|any|everything|with|using|at|on|for|when)\b"
     r"|please (?:\w+ ){0,2}donat|make a donation|join the course|my (?:new )?course"
     r"|my (?:new )?academy|patreon|become a (?:patron|member)|check out my",
     re.I,

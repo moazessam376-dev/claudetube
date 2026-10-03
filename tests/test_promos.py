@@ -43,6 +43,13 @@ def test_code_lessons_are_not_promos():
     assert promos.find(paras, 30) == []
 
 
+def test_percent_settings_are_not_promos():
+    paras = [(0, "Turn the light 100% off for now, we will add it back later."),
+             (25, "Now move it 50% off-center along the axis."),
+             (50, "Set the mix to 100% off and compare.")]
+    assert promos.find(paras, 75) == []
+
+
 def test_discount_sponsor_read():
     paras = [(0, LESSON), (10, "Thanks to Squarespace for supporting this video. Get 10% off with the link below."),
              (20, LESSON)]
