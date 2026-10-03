@@ -21,6 +21,7 @@ Requirements: Python 3.9+, plus `yt-dlp` and `ffmpeg` on your PATH:
 ```
 brew install yt-dlp ffmpeg        # macOS
 pipx install yt-dlp && sudo apt install ffmpeg   # Linux
+winget install yt-dlp.yt-dlp Gyan.FFmpeg          # Windows
 ```
 
 Then just ask: *"watch https://youtu.be/… and follow the tutorial in Blender"*. The
@@ -55,6 +56,10 @@ On a MacBook with a home connection, using Blender Guru's *Beginner Blender Tuto
 | 121 frames every 5 s over 10 min → 14 sheets | 2.9 s |
 | Scene detection over the whole 4h19m + 400 frames | 70 s |
 
+On Windows 10 (Intel i5-3570, 2012) with the same video: `info` 7.3 s, 9 HD frames 3.6 s, one
+1080p frame 2.4 s, 121 frames every 5 s 2.0 s, scan copy (360p H.264, 364 MB) 2 min, scene
+detection on one chapter + 90 frames 13 s, whole video + 400 frames 86 s.
+
 The transcript of the whole 4-hour video is ~68k tokens (~8k per chapter). A 3x3 sheet costs
 about 1.8k image tokens, so ~200 tokens per frame.
 
@@ -67,7 +72,9 @@ about 1.8k image tokens, so ~200 tokens per frame.
 - **Many frames → local scan copy.** Streaming continuously through ffmpeg is throttled by
   YouTube to about real time, but yt-dlp's parallel chunked download is not. So for dense work
   the smallest 360p stream is downloaded once, and frames come from it instantly. In a 3x3
-  sheet each tile is shown ~520 px wide, so 360p loses almost nothing there.
+  sheet each tile is shown ~520 px wide, so 360p loses almost nothing there. The copy is AV1 on
+  macOS (smallest) and H.264 elsewhere, because software AV1 decoding was 3.5x slower on an older
+  x86 CPU (override with `CLAUDETUBE_SCAN_CODEC=av01|avc1|vp09`).
 - **Scene detection** decodes the scan copy at 1 fps to 32x18 grayscale. It masks screen
   regions that change in more than 40 % of frames (the presenter's webcam), and emits one event
   per burst of change, timed at the first settled frame after it.

@@ -26,8 +26,15 @@ SEGMENT_S = 600  # synthetic chapter length for long videos without chapters
 HD_SEEK_LIMIT = 24  # more frames than this without a scan copy -> download the scan copy instead
 
 
+class _ReaderGone(Exception):
+    """stdout's reader closed the pipe (Windows has no SIGPIPE; it raises EINVAL/EPIPE instead)."""
+
+
 def out(*a):
-    print(*a, flush=True)
+    try:
+        print(*a, flush=True)
+    except OSError as e:
+        raise _ReaderGone() from e
 
 
 def _ctx(url):
@@ -65,7 +72,7 @@ def cmd_info(a):
         cap = meta["caption"]["file"]
         paras = []
         if cap:
-            frags = captions.parse_json3(json.loads(Path(cap).read_text()))
+            frags = captions.parse_json3(json.loads(Path(cap).read_text(encoding="utf-8")))
             if not meta["chapters"] and frags and frags[-1][0] > SEGMENT_S * 3 / 2:
                 end = meta.get("duration") or frags[-1][0]
                 meta["chapters"] = [
@@ -77,10 +84,10 @@ def cmd_info(a):
             paras = captions.paragraphs(frags, breaks=[c["start_time"] for c in meta["chapters"]])
         for p in vdir.glob("subs.*.json3"):
             p.unlink()
-        md_path.write_text(captions.render(meta, paras))
+        md_path.write_text(captions.render(meta, paras), encoding="utf-8")
     if a.prefetch:
         youtube.start_prefetch(url, vdir, Path(__file__).resolve())
-    md = md_path.read_text()
+    md = md_path.read_text(encoding="utf-8")
     if a.chapter:
         out(captions.chapter_section(md, a.chapter))
     elif captions.estimate_tokens(md) <= FULL_PRINT_TOKENS:
@@ -198,7 +205,8 @@ def _stop_prefetch(vdir: Path):
     try:
         st = json.loads((vdir / "scan.status").read_text())
         if st.get("state") == "running" and st.get("pid"):
-            os.killpg(st["pid"], signal.SIGTERM)
+            if proc.alive(st["pid"]):
+                proc.kill_tree(st["pid"])
     except (OSError, ValueError, ProcessLookupError):
         pass
 
@@ -271,12 +279,18 @@ def build_parser():
 def main(argv=None) -> int:
     if hasattr(signal, "SIGPIPE"):
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # quiet exit when piped into `head`
+    for s in (sys.stdout, sys.stderr):  # titles/transcripts are Unicode; Windows pipes default to cp1252
+        if hasattr(s, "reconfigure"):
+            s.reconfigure(encoding="utf-8", errors="replace")
     a = build_parser().parse_args(argv)
     try:
         cache.sweep()
         if a.cmd != "cleanup":
             proc.need("yt-dlp", "ffmpeg")
         return a.fn(a)
+    except _ReaderGone:
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())  # silence the exit-time flush
+        return 0
     except proc.MissingDep as e:
         print(f"MISSING_DEPENDENCY: {e}", file=sys.stderr)
         return 2

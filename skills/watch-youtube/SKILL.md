@@ -5,7 +5,8 @@ description: Watch a YouTube video fast — transcript and chapters first, then 
 
 # Watch YouTube
 
-`CT` below means `python3 <this skill's base directory>/scripts/claudetube.py`. It needs `yt-dlp`
+`CT` below means `python3 <this skill's base directory>/scripts/claudetube.py` (on Windows use
+`python`; `python3` there may be the Microsoft Store stub). It needs `yt-dlp`
 and `ffmpeg`; on exit code 2 relay its install command to the user.
 
 Speed comes from three habits: **transcript first**, a deliberate **frame budget**, and

@@ -78,7 +78,17 @@ def test_choose_hd_prefers_avc1_at_height():
 
 
 def test_choose_scan_smallest_360():
-    assert youtube.choose_scan(F)["format_id"] == "396"
+    assert youtube.choose_scan(F, "av01")["format_id"] == "396"
+
+
+def test_choose_scan_prefers_codec_then_smallest():
+    assert youtube.choose_scan(F, "avc1")["format_id"] == "134"
+    assert youtube.choose_scan(F, "vp09")["format_id"] == "396"  # codec absent -> smallest 360p
+
+
+def test_scan_codec_env_override(monkeypatch):
+    monkeypatch.setenv("CLAUDETUBE_SCAN_CODEC", "vp09")
+    assert youtube.scan_codec() == "vp09"
 
 
 def test_pick_caption_prefers_manual_then_orig(tmp_path):

@@ -139,12 +139,22 @@ def choose_hd(formats, height: int):
     return max(cands, key=lambda f: (f["height"], f["vcodec"].startswith("avc1"), -f["size"]))
 
 
-def choose_scan(formats):
-    """Smallest 360p stream (fallback: nearest height in 240..480, then anything smallest)."""
+def scan_codec() -> str:
+    """Codec preferred for the scan copy. AV1 is the smallest download, but software AV1 decode is
+    ~3.5x slower than H.264 on older x86 CPUs (measured on an i5-3570), and scene detection decodes
+    the whole range. Macs decode AV1 fast, so they keep the smaller file."""
+    return os.environ.get("CLAUDETUBE_SCAN_CODEC") or ("av01" if sys.platform == "darwin" else "avc1")
+
+
+def choose_scan(formats, codec=None):
+    """Smallest 360p stream in the preferred codec, else smallest 360p (fallback: nearest height in
+    240..480, then anything smallest)."""
+    codec = codec or scan_codec()
     for ok in (lambda h: h == 360, lambda h: 240 <= h <= 480, lambda h: True):
         cands = [f for f in formats if ok(f["height"]) and f["size"]] or [f for f in formats if ok(f["height"])]
         if cands:
-            return min(cands, key=lambda f: (f["size"] or 1 << 62, abs(f["height"] - 360)))
+            return min(cands, key=lambda f: (not f["vcodec"].startswith(codec), f["size"] or 1 << 62,
+                                             abs(f["height"] - 360)))
     return None
 
 
@@ -179,11 +189,7 @@ def _set_status(vdir: Path, **st):
 
 
 def _alive(pid) -> bool:
-    try:
-        os.kill(pid, 0)
-        return True
-    except (OSError, TypeError):
-        return False
+    return proc.alive(pid)
 
 
 def download_scan(url: str, vdir: Path) -> Path:
@@ -216,9 +222,8 @@ def start_prefetch(url: str, vdir: Path, cli: Path):
     st = _status(vdir)
     if st and st.get("state") == "running" and _alive(st.get("pid")):
         return
-    log = open(vdir / "scan.log", "w")
-    p = subprocess.Popen([sys.executable, str(cli), "_scan", url], stdout=log, stderr=log,
-                         stdin=subprocess.DEVNULL, start_new_session=True)
+    log = open(vdir / "scan.log", "w", encoding="utf-8")
+    p = proc.spawn_detached([sys.executable, str(cli), "_scan", url], log)
     _set_status(vdir, state="running", pid=p.pid, started=time.time())
 
 
